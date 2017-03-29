@@ -92,7 +92,7 @@ return table1;
 
 function os () {
     var os_dic = ['Windows NT 6.1','Windows NT 10.0','Mac OS X','Windows NT 6.0','Windows NT 6.2',
-        'Windows NT 6.3','Linux','Windows NT 5.1'];
+        'Windows NT 6.3','Windows NT 5.1','Android 4','Android 5','Android 6'];
     var table1 = new Table({
         head: ['IP', 'DATE', 'RESPONSE', 'USER-AGENT', 'OS'],
         colWidths: [20, 30, 55, 200, 70]
@@ -155,7 +155,7 @@ function asynCountryIP () {
 
 function callback(error, response, body) {
     var temp;
-    if (!error && response.statusCode == 200) {
+    if (!error && response.statusCode === 200) {
         temp = JSON.parse(body).country_name;
         if (!clib.hasOwnProperty(temp)) {
             clib[temp] = 1;
