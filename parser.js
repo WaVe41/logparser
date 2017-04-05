@@ -3,40 +3,44 @@ var request = require('request');
 var Table = require('cli-table');
 var sync = require('sync-request');
 var contents = fs.readFileSync('logs.txt', 'utf8');
-var clib = JSON.parse(fs.readFileSync('./clib.json').toString());
+var clib = JSON.parse(fs.readFileSync('./countrylib.json').toString());
 
-function splittingText () {
+function getParsedLog() {
     var table = new Table({
         head: ['IP', 'DATE', 'RESPONSE', 'USER-AGENT'],
         colWidths: [20, 30, 55, 200]
     });
+
     var lines = contents.split(/\r\n|\n\r|\r|\n/),
         length = lines.length,
         splitbyrows,
-        splitedrow,
+        splittedrow,
         extractIpDate,
         i = 0;
-    //console.log("Length: " + length);
+
     while (length--) {
         splitbyrows = lines[i];
-        splitedrow = splitbyrows.split('"');
-        extractIpDate = splitedrow[0].split(' ');
+        splittedrow = splitbyrows.split('"');
+        extractIpDate = splittedrow[0].split(' ');
         table.push(
-            [extractIpDate[0], extractIpDate[3].substring(1), splitedrow[1].substring(4), splitedrow[5]]
+            [extractIpDate[0], extractIpDate[3].substring(1), splittedrow[1].substring(4), splittedrow[5]]
         );
         i++;
     }
+
 return table;
 }
 
-function numUsers () {
-    var table = splittingText(),
+function getFirstConnections() {
+    var table = getParsedLog(),
         length = table.length,
         i = 0;
+
     var table1 = new Table({
         head: ['IP', 'DATE', 'RESPONSE', 'USER-AGENT'],
         colWidths: [20, 30, 55, 200]
     });
+
     while (length--) {
         if (table[i][2].search(/\/books\//) !== -1) {
           table1.push([table[i][0], table[i][1],table[i][2],table[i][3]]);
@@ -44,37 +48,41 @@ function numUsers () {
         }
         i++;
     }
-    console.log("Total users today with bots: "+table1.length);
+
+    //console.log("Total users today with bots: "+table1.length);
 
     return table1;
 }
 
-function withoutBots () {
-    var table = numUsers(),
+function getUsersWithoutBots() {
+    var table = getFirstConnections(),
         length = table.length,
         i = 0;
+
     var table1 = new Table({
         head: ['IP', 'DATE', 'RESPONSE', 'USER-AGENT'],
         colWidths: [20, 30, 55, 200]
     });
+
     while (length--) {
         if (table[i][3].search(/bot|mediapartners-google|\/slurp|\/crawler.php|ias_crawler|\/spider.php/i) === -1) {
             table1.push([table[i][0], table[i][1],table[i][2],table[i][3]]);
         }
         i++;
     }
-    console.log("Total users today WITHOUT bots: "+table1.length);
-    return table1;
+    //console.log("Total users today WITHOUT bots: "+table1.length);
 
+    return table1;
 }
 
-function userAgents () {
-    var table = withoutBots(),
-        browser_splitting,
+function getUserAgents() {
+    var table =  getUsersWithoutBots(),
         length = table.length,
-        together,
+        browser_splitting,
         split_length,
+        extractBrowser,
         i = 0;
+
     var table1 = new Table({
         head: ['IP', 'DATE', 'RESPONSE', 'USER-AGENT', 'BROWSER'],
         colWidths: [20, 30, 55, 200, 60]
@@ -83,26 +91,30 @@ function userAgents () {
     while (length--) {
     browser_splitting = table[i][3].split(' ');
     split_length = browser_splitting.length - 1;
-    together = browser_splitting[split_length];
-    table1.push([table[i][0], table[i][1],table[i][2],table[i][3],together]);
+    extractBrowser = browser_splitting[split_length];
+    table1.push(
+        [table[i][0], table[i][1],table[i][2],table[i][3],extractBrowser]);
+
         i++;
     }
+
 return table1;
 }
 
-function os () {
+function getOS() {
     var os_dic = ['Windows NT 6.1','Windows NT 10.0','Mac OS X','Windows NT 6.0','Windows NT 6.2',
         'Windows NT 6.3','Windows NT 5.1','Android 4','Android 5','Android 6'];
+
     var table1 = new Table({
         head: ['IP', 'DATE', 'RESPONSE', 'USER-AGENT', 'OS'],
         colWidths: [20, 30, 55, 200, 70]
     });
-    var table = withoutBots(),
+
+    var table =  getUsersWithoutBots(),
         length = table.length,
         i = 0,
         os_length = os_dic.length,
         regexp;
-
 
     while (length--) {
         for (var j = 0; j < os_length; j++) {
@@ -115,54 +127,55 @@ function os () {
         }
     i++;
     }
-    console.log("Num OS detected: "+table1.length);
+
+    //console.log("Num OS detected: "+table1.length);
 return table1;
 }
 
-function syncCountryIp () {
-    var table = withoutBots(),
+function getCountriesByIpSync() {
+    var table = getUsersWithoutBots(),
         length = table.length,
         i = 0,
-        res,
-        temp;
+        query_result,
+        countryname;
 
     while (length--) {
-        res = sync('GET','http://freegeoip.net/json/'+table[i][0]);
-        temp = JSON.parse(res.getBody('utf8')).country_name;
-        if (!clib.hasOwnProperty(temp)) {
-            clib[temp] = 1;
-            fs.writeFile('clib.json', JSON.stringify(clib));
+        query_result = sync('GET','http://freegeoip.net/json/'+table[i][0]);
+        countryname = JSON.parse(query_result.getBody('utf8')).country_name;
+        if (!clib.hasOwnProperty(countryname)) {
+            clib[countryname] = 1;
+            fs.writeFile('countrylib.json', JSON.stringify(clib));
 
         } else {
-            clib[temp] += 1;
-            fs.writeFile('clib.json', JSON.stringify(clib));
+            clib[countryname] += 1;
+            fs.writeFile('countrylib.json', JSON.stringify(clib));
         }
         i++;
     }
 
 }
 
-function asynCountryIP () {
-    var table = withoutBots(),
+function getCountriesByIpAsync() {
+    var table = getUsersWithoutBots(),
         length = table.length-1,
         i = 0;
     do  {
-        request('http://freegeoip.net/json/'+table[i][0],callback);
+        request('http://freegeoip.net/json/'+table[i][0],callbackForAsync);
 
         i++;
     } while (length--)
 }
 
-function callback(error, response, body) {
-    var temp;
+function callbackForAsync(error, response, body) {
+    var countryname;
     if (!error && response.statusCode === 200) {
-        temp = JSON.parse(body).country_name;
-        if (!clib.hasOwnProperty(temp)) {
-            clib[temp] = 1;
-            fs.writeFile('clib.json', JSON.stringify(clib));
+        countryname = JSON.parse(body).country_name;
+        if (!clib.hasOwnProperty(countryname)) {
+            clib[countryname] = 1;
+            fs.writeFile('countrylib.json', JSON.stringify(clib));
         } else {
-            clib[temp] += 1;
-            fs.writeFile('clib.json', JSON.stringify(clib));
+            clib[countryname] += 1;
+            fs.writeFile('countrylib.json', JSON.stringify(clib));
         }
     }
 
@@ -170,13 +183,14 @@ function callback(error, response, body) {
 
 //<======================================================>
 
-//console.log(splittingText().toString());
-//console.log(numUsers().toString());
-//console.log(withoutBots().toString());
-//console.log(userAgents().toString());
-//console.log(os().toString());
-//asynCountryIP();
-//syncCountryIp();
+//USAGE:
+//console.log(getParsedLog().toString());
+//console.log(getFirstConnections().toString());
+//console.log(getUsersWithoutBots().toString());
+//console.log(getUserAgents().toString());
+//console.log(getOS().toString());
+//getCountriesByIpSync(); //Need to init (clear) countrylib.json before using like: {}
+//getCountriesByIpAsync(); //Need to init (clear) countrylib.json before using like: {}
 
 //<......................................................>
 
