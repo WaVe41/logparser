@@ -42,7 +42,9 @@ function getFirstConnections() {
 
     while (length--) {
         if (table[i][2].search(/\/books\//) !== -1) {
-          table1.push([table[i][0], table[i][1],table[i][2],table[i][3]]);
+          table1.push(
+              [table[i][0], table[i][1], table[i][2], table[i][3]]
+          );
         }
         i++;
 
@@ -62,7 +64,9 @@ function getUsersWithoutBots() {
 
     while (length--) {
         if (table[i][3].search(/bot|mediapartners-google|\/slurp|\/crawler.php|ias_crawler|\/spider.php/i) === -1) {
-            table1.push([table[i][0], table[i][1],table[i][2],table[i][3]]);
+            table1.push(
+                [table[i][0], table[i][1], table[i][2], table[i][3]]
+            );
         }
         i++;
 
@@ -88,7 +92,8 @@ function getUserAgents() {
     split_length = browser_splitting.length - 1;
     extractBrowser = browser_splitting[split_length];
     table1.push(
-        [table[i][0], table[i][1],table[i][2],table[i][3],extractBrowser]);
+        [table[i][0], table[i][1], table[i][2], table[i][3], extractBrowser]
+    );
         i++;
 
     }
@@ -114,7 +119,9 @@ function getOS() {
             regexp = new RegExp(os_dic[j],"i");
 
         if (table[i][3].search(regexp) !== -1) {
-            table1.push([table[i][0], table[i][1],table[i][2],table[i][3],os_dic[j]]);
+            table1.push(
+                [table[i][0], table[i][1], table[i][2], table[i][3], os_dic[j]]
+            );
             break;
             }
         }
@@ -139,7 +146,6 @@ function getCountriesByIpSync() {
         if (!clib.hasOwnProperty(countryname)) {
             clib[countryname] = 1;
             fs.writeFile('countrylib.json', JSON.stringify(clib));
-
         } else {
             clib[countryname] += 1;
             fs.writeFile('countrylib.json', JSON.stringify(clib));
@@ -156,7 +162,6 @@ function getCountriesByIpAsync() {
 
     do  {
         request('http://freegeoip.net/json/'+table[i][0],callbackForAsync);
-
         i++;
     } while (length--)
 
@@ -171,7 +176,6 @@ function callbackForAsync(error, response, body) {
         if (!clib.hasOwnProperty(countryname)) {
             clib[countryname] = 1;
             fs.writeFile('countrylib.json', JSON.stringify(clib));
-
         } else {
             clib[countryname] += 1;
             fs.writeFile('countrylib.json', JSON.stringify(clib));
